@@ -1,0 +1,185 @@
+---
+title: "1. Construct Network and Module Detection"
+output: html_notebook
+---
+
+```{r}
+# Open modified data file
+plantData = read.table(file = "InputFiles/VST_normalised.txt")
+
+# Transposing data
+datExpr = as.data.frame(t(plantData));
+
+# Switching rows and columns for new datExpr table
+names(datExpr) = rownames(plantData);
+rownames(datExpr) = names(plantData);
+datExpr
+
+# Save modified expression data
+save(datExpr, file = "PlantStrains-01-dataInput.RData")
+
+# load file
+lnames = load(file = "PlantStrains-01-dataInput.RData")
+
+# calc soft threshold
+powers = c(c(1:15), seq(from = 16, to=30, by=2))
+sft = pickSoftThreshold(datExpr, powerVector = powers, networkType = "signed hybrid", verbose = 5)
+
+# Plot  results
+par(mfrow = c(1,2))
+cex1 = 0.6
+## R^2 model
+plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
+     main = paste("Scale independence"));
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     labels=powers,cex=cex1,col="red");
+abline(h=0.97,col="green", lwd = 0.35)
+
+# Mean connectivity as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], sft$fitIndices[,5],
+     xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+     main = paste("Mean connectivity"))
+text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+```
+
+```{r}
+# Co-express similarity and adjacency
+softPower = 13;
+adjacency = adjacency(datExpr, type = "signed hybrid", power = softPower);
+```
+
+```{r}
+### TOM CONSTRUCTION ###
+# Turn adjacency into topological overlap matrix
+TOM = TOMsimilarity(adjacency, TOMType = "signed")
+dissTOM = 1-TOM
+# Call the hierarchical clustering function
+geneTree = hclust(as.dist(dissTOM), method = "average");
+# Plot the resulting clustering tree (dendrogram)
+plot(geneTree, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity",
+    labels = FALSE, hang = 0.04)
+```
+
+```{r}
+### LIST MODULE SIZE ###
+# Set min module size
+minModuleSize = 50
+# Module identification using dynamic tree cut
+dynamicMods = cutreeDynamic(dendro = geneTree, distM = dissTOM,
+              deepSplit = 2, pamRespectsDendro = FALSE, method = "hybrid",
+              minClusterSize = minModuleSize)
+table(dynamicMods)
+```
+
+```{r}
+### PLOT MODULE ASSIGNMNET UNDER GENE DENDROGRAM ###
+# Convert numeric lables into colors
+dynamicColors = labels2colors(dynamicMods)
+# Plot the dendrogram and colors underneath
+plotDendroAndColors(geneTree, dynamicColors, "Dynamic Tree Cut",
+                  dendroLabels = FALSE, hang = 0.03,
+                  addGuide = TRUE, guideHang = 0.05,
+                  main = "Gene dendrogram and module colors")
+```
+
+```{r}
+### MERGE MODULE EIGENGENES WITH SIMILAR EXPRESSION PROFILES###
+# Calculate eigengenes
+MEList = moduleEigengenes(datExpr, colors = dynamicColors)
+MEs = MEList$eigengenes
+# Calculate dissimilarity of module eigengenes
+MEDiss = 1-cor(MEs);
+# Cluster module eigengenes
+METree = hclust(as.dist(MEDiss), method = "average");
+# Plot  result
+sizeGrWindow(7, 6)
+plot(METree, main = "Clustering of module eigengenes",
+xlab = "", sub = "")
+
+# We choose a height cut of 0.25, corresponding to correlation of 0.75, to merge
+MEDissThres = 0.25
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres, col = "red", lwd = 0.35)
+# Call an automatic merging function
+merge = mergeCloseModules(datExpr, dynamicColors, cutHeight = MEDissThres, verbose = 3)
+# The merged module colors
+mergedColors = merge$colors;
+# Eigengenes of the new merged modules:
+mergedMEs = merge$newMEs;
+```
+
+```{r}
+# Update module colours, labels and module eigengenes
+moduleColors = mergedColors
+colorOrder = c("grey", standardColors(100)) 
+moduleLabels = match(moduleColors, colorOrder)-1
+moduleLabels.ME = paste("M", moduleLabels, sep = "")
+MEs = mergedMEs
+row.names(MEs) = row.names(data.frame(datExpr)) # already transposed data so no need to switch col/rows
+
+### MODULE COLOURS TO MODULE NUMBERS ###
+# Create data.frames of tables to merge
+moduleColors.df = data.frame(table(moduleColors))
+moduleLabels.df = data.frame(table(moduleLabels))
+
+## Create colours column in moduleLabels ##
+moduleLabels.df$colour = NA
+# Create list to use in For loop
+moduleColors.list = list()
+for (i in 1:length(moduleLabels.df$Freq)) {
+    moduleColors.list[[i]] = 
+      as.character(moduleColors.df$moduleColors[moduleLabels.df$Freq[i] == moduleColors.df$Freq])
+}
+moduleColors.list.df = do.call(rbind.data.frame, moduleColors.list)
+colnames(moduleColors.list.df) = "moduleColors"
+moduleLabels.df$colour = moduleColors.list.df$moduleColors
+
+# Concatenate new column label 'moduleNumbers'
+moduleLabels.df$moduleNumbers = paste("M", moduleLabels.df$moduleLabels, sep = "")
+
+## Align moduleNumbers with native ordering in MEs ##
+# Get specific MEs colnames order into data frame
+MEs.tochange = colnames(MEs)
+# Convert to data.frame
+MEs.tochange.df = data.frame(MEs.tochange)
+# Add colour column w/o ME
+MEs.tochange.df$MEcolour = stringr::str_remove(MEs.tochange.df$MEs.tochange, "ME")
+# Add moduleLabel column
+MEs.tochange.df$moduleLabel = 0
+# Make colour column a factor
+MEs.tochange.df$MEcolour = as.factor(MEs.tochange.df$MEcolour)
+MEs.tochange.df$moduleLabel = as.factor(MEs.tochange.df$moduleLabel)
+moduleLabels.df$colour = as.factor(moduleLabels.df$colour)
+# Create list
+MEs.tochange.list = list()
+
+# Assign value of moduleLabels where the colour label from MEs.tochange.df matches moduleLabels.df
+for (i in 1:length(MEs.tochange.df$MEcolour)) {
+  MEs.tochange.list[[i]] <- as.character(moduleLabels.df$moduleLabels[MEs.tochange.df$MEcolour[i] == moduleLabels.df$colour])
+}
+MEs.tochange.list.df = do.call(rbind.data.frame, MEs.tochange.list)
+colnames(MEs.tochange.list.df) = "moduleLabels"
+MEs.tochange.df$moduleLabel = MEs.tochange.list.df$moduleLabels
+# Concatenate new column label 'moduleNumbers'
+MEs.tochange.df$moduleNumber = paste("M", MEs.tochange.df$moduleLabel, sep = "")
+
+# Add module Numbers to MEs data.frame
+colnames(MEs) = MEs.tochange.df$moduleNumber
+MEDiss = 1-cor(MEs)
+
+# Get gene-module assignments
+gene.module.assignments = data.frame("ID" = colnames(datExpr),
+                                     "Module.Assignment" = moduleColors,
+                                     "New.Module.Assignment" = moduleLabels.ME,
+                                     check.names = F)
+write.table(gene.module.assignments, file = "Tables/gene.module.assignments.txt", sep = "\t")
+```
+
+```{r}
+# Plot dendrogram w/original and merged module colours underneath
+plotDendroAndColors(geneTree, cbind(dynamicColors, moduleColors),
+                  c("Dynamic Tree Cut", "Merged dynamic"),
+                  dendroLabels = FALSE, hang = 0.03,
+                  addGuide = TRUE, guideHang = 0.05)
+```
