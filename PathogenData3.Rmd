@@ -1,0 +1,66 @@
+---
+title: "3. Module Differential Co-Expression"
+output: html_notebook
+---
+
+```{r}
+## Identify if can compare separate data sets via 'Infection Stages' ##
+
+# Setup new data frame with Stage and Group columns
+datExpr1 = datExpr
+datExpr1$Stage = NA
+datExpr1$Group = NA
+
+# Create for loop to fill in 'Infection Stages' value
+for (i in 1:length(row.names(datExpr1))) {
+  sample.datExpr1 = row.names(datExpr1)[i]
+  if (stri_detect(sample.datExpr1, regex = "Ta_A")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "A"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "H"
+  }
+  if (stri_detect(sample.datExpr1, regex = "7d")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "A"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "PG"
+  }
+  if (stri_detect(sample.datExpr1, regex = "Ta_B")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "B"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "H"
+  }
+  if (stri_detect(sample.datExpr1, regex = "12d")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "B"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "PG"
+  }
+  if (stri_detect(sample.datExpr1, regex = "Ta_C")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "C"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "H"
+  }
+  if (stri_detect(sample.datExpr1, regex = "14d")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "C"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "PG"
+  }
+  if (stri_detect(sample.datExpr1, regex = "Ta_D")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "D"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "H"
+  }
+  if (stri_detect(sample.datExpr1, regex = "28d")) {
+    datExpr1$Stage[match(NA,datExpr1$Stage)] = "D"
+    datExpr1$Group[match(NA,datExpr1$Group)] = "PG"
+  }
+}
+```
+
+```{r}
+## Stats Tests ##
+# perform PCA
+datExpr.PCA <- prcomp(datExpr1[1:9276], scale. = TRUE) # raw data
+
+## Plot PCA Results ##
+## datExpr
+jpeg(file = "Plots/PCA/Infection-Stages-PCA.jpeg", width = 600, height = 600, res = 100)
+# plot PCA, assign colours via 'Stage' column 
+autoplot(datExpr.PCA, data = datExpr1, colour = "Group", shape = "Stage", 
+         labels = "Stage", loadings = FALSE, size = 2.5) +
+  scale_shape_manual(values=rep(c(15,5,17,25),2)) +
+  scale_colour_manual(values=c("#1A85FF","#D41159"))  
+dev.off()
+```
