@@ -1,0 +1,944 @@
+---
+title: "4. Module Differential Co-Expression Analysis"
+output: html_notebook
+---
+
+```{r}
+### Data prep ###
+# Remove grey module from analyses #
+MEs.noGrey = MEs[!colnames(MEs) == "M0"]
+
+# Open modified data file
+sample.info = read.table(file = "InputFiles/Sample_info.txt", header = TRUE)
+
+# Ensure every isolate row starts with a character, so R can process future requests
+for (i in 1:length(sample.info$Isolate)) {
+  sample.Isolate = sample.info$Isolate[i]
+  if (!stri_detect(sample.Isolate, regex = "Zt")) {
+    char.Isolate = paste0("X", sample.Isolate)
+    sample.info$Isolate[match(sample.Isolate,sample.info$Isolate)] = char.Isolate
+  }
+  }
+  
+### Create data.frames from ggsignif() in box plots later ###
+# Combine factors of interest into single factor (i.e. group means parameterisation) #
+combined.factor = factor(paste(sample.info$Isolate, sample.info$Stage, sep = '_'))
+
+# Create design matrix #
+design.matrix = model.matrix(~ 0 + combined.factor)
+colnames(design.matrix) = levels(combined.factor)
+row.names(design.matrix) = sample.info$Sample
+
+# Fit linear model #
+model.fit = lmFit(t(MEs.noGrey), design.matrix) # default correlation of 0.75
+
+### Initialise contrasts ###
+contrast.matrix = makeContrasts(# Global differences #
+                                B.vs.A = (Zt05_B + Zt09_B + Zt10_B + X3D1_B + X3D7_B + X1A5_B + X1E4_B)/7 - (Zt05_A + Zt09_A + Zt10_A + X3D1_A + X3D7_A + X1A5_A + X1E4_A)/7,
+                                C.vs.B = (Zt05_C + Zt09_C + Zt10_C + X3D1_C + X3D7_C + X1A5_C + X1E4_C)/7 - (Zt05_B + Zt09_B + Zt10_B + X3D1_B + X3D7_B + X1A5_B + X1E4_B)/7,
+                                D.vs.C = (Zt05_D + Zt09_D + Zt10_D + X3D1_D + X3D7_D + X1A5_D + X1E4_D)/7 - (Zt05_C + Zt09_C + Zt10_C + X3D1_C + X3D7_C + X1A5_C + X1E4_C)/7,
+                                # Local differences #
+                                Zt05.A.vs.Zt09.A = Zt05_A - Zt09_A,
+                                Zt05.A.vs.Zt10.A = Zt05_A - Zt10_A,
+                                Zt09.A.vs.Zt10.A = Zt09_A - Zt10_A,
+                                X1E4.A.vs.X1A5.A = X1E4_A - X1A5_A,
+                                X3D1.A.vs.X1E4.A = X3D1_A - X1E4_A,
+                                X3D7.A.vs.X3D1.A = X3D7_A - X3D1_A,
+                                X3D1.A.vs.X1A5.A = X3D1_A - X1A5_A,
+                                X3D7.A.vs.X1E4.A = X3D7_A - X1E4_A,
+                                X3D7.A.vs.X1A5.A = X3D7_A - X1A5_A,
+                                Zt05.B.vs.Zt09.B = Zt05_B - Zt09_B,
+                                Zt05.B.vs.Zt10.B = Zt05_B - Zt10_B,
+                                Zt09.B.vs.Zt10.B = Zt09_B - Zt10_B,
+                                X1E4.B.vs.X1A5.B = X1E4_B - X1A5_B,
+                                X3D1.B.vs.X1E4.B = X3D1_B - X1E4_B,
+                                X3D7.B.vs.X3D1.B = X3D7_B - X3D1_B,
+                                X3D1.B.vs.X1A5.B = X3D1_B - X1A5_B,
+                                X3D7.B.vs.X1E4.B = X3D7_B - X1E4_B,
+                                X3D7.B.vs.X1A5.B = X3D7_B - X1A5_B,
+                                Zt05.C.vs.Zt09.C = Zt05_C - Zt09_C,
+                                Zt05.C.vs.Zt10.C = Zt05_C - Zt10_C,
+                                Zt09.C.vs.Zt10.C = Zt09_C - Zt10_C,
+                                X1E4.C.vs.X1A5.C = X1E4_C - X1A5_C,
+                                X3D1.C.vs.X1E4.C = X3D1_C - X1E4_C,
+                                X3D7.C.vs.X3D1.C = X3D7_C - X3D1_C,
+                                X3D1.C.vs.X1A5.C = X3D1_C - X1A5_C,
+                                X3D7.C.vs.X1E4.C = X3D7_C - X1E4_C,
+                                X3D7.C.vs.X1A5.C = X3D7_C - X1A5_C,
+                                Zt05.D.vs.Zt09.D = Zt05_D - Zt09_D,
+                                Zt05.D.vs.Zt10.D = Zt05_D - Zt10_D,
+                                Zt09.D.vs.Zt10.D = Zt09_D - Zt10_D,
+                                X1E4.D.vs.X1A5.D = X1E4_D - X1A5_D,
+                                X3D1.D.vs.X1E4.D = X3D1_D - X1E4_D,
+                                X3D7.D.vs.X3D1.D = X3D7_D - X3D1_D,
+                                X3D1.D.vs.X1A5.D = X3D1_D - X1A5_D,
+                                X3D7.D.vs.X1E4.D = X3D7_D - X1E4_D,
+                                X3D7.D.vs.X1A5.D = X3D7_D - X1A5_D,
+                                levels = design.matrix)
+
+### Compute contrasts and moderated t-tests ###
+contrast.fit = contrasts.fit(model.fit, contrast.matrix)
+contrast.fit = eBayes(contrast.fit)
+
+## Write tables for ggsignif() for between each infection stage measured ##
+# Global Tables #
+write.table(topTable(contrast.fit, coef = 'B.vs.A', n=Inf), 'Tables/differential_coexpression/stageB.vs.stageA.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'C.vs.B', n=Inf), 'Tables/differential_coexpression/stageC.vs.stageB.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'D.vs.C', n=Inf), 'Tables/differential_coexpression/stageD.vs.stageC.txt', sep='\t', row.names = T)
+# Local comparisons #
+# A
+write.table(topTable(contrast.fit, coef = 'Zt05.A.vs.Zt09.A', n=Inf), 'Tables/differential_coexpression/stage_A/Zt05.A.vs.Zt09.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt05.A.vs.Zt10.A', n=Inf), 'Tables/differential_coexpression/stage_A/Zt05.A.vs.Zt10.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt09.A.vs.Zt10.A', n=Inf), 'Tables/differential_coexpression/stage_A/Zt09.A.vs.Zt10.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X1E4.A.vs.X1A5.A', n=Inf), 'Tables/differential_coexpression/stage_A/X1E4.A.vs.X1A5.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.A.vs.X1E4.A', n=Inf), 'Tables/differential_coexpression/stage_A/X3D1.A.vs.X1E4.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.A.vs.X3D1.A', n=Inf), 'Tables/differential_coexpression/stage_A/X3D7.A.vs.X3D1.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.A.vs.X1A5.A', n=Inf), 'Tables/differential_coexpression/stage_A/X3D1.A.vs.X1A5.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.A.vs.X1E4.A', n=Inf), 'Tables/differential_coexpression/stage_A/X3D7.A.vs.X1E4.A.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.A.vs.X1A5.A', n=Inf), 'Tables/differential_coexpression/stage_A/X3D7.A.vs.X1A5.A.txt', sep='\t', row.names = T)
+# B
+write.table(topTable(contrast.fit, coef = 'Zt05.B.vs.Zt09.B', n=Inf), 'Tables/differential_coexpression/stage_B/Zt05.B.vs.Zt09.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt05.B.vs.Zt10.B', n=Inf), 'Tables/differential_coexpression/stage_B/Zt05.B.vs.Zt10.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt09.B.vs.Zt10.B', n=Inf), 'Tables/differential_coexpression/stage_B/Zt09.B.vs.Zt10.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X1E4.B.vs.X1A5.B', n=Inf), 'Tables/differential_coexpression/stage_B/X1E4.B.vs.X1A5.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.B.vs.X1E4.B', n=Inf), 'Tables/differential_coexpression/stage_B/X3D1.B.vs.X1E4.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.B.vs.X3D1.B', n=Inf), 'Tables/differential_coexpression/stage_B/X3D7.B.vs.X3D1.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.B.vs.X1A5.B', n=Inf), 'Tables/differential_coexpression/stage_B/X3D1.B.vs.X1A5.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.B.vs.X1E4.B', n=Inf), 'Tables/differential_coexpression/stage_B/X3D7.B.vs.X1E4.B.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.B.vs.X1A5.B', n=Inf), 'Tables/differential_coexpression/stage_B/X3D7.B.vs.X1A5.B.txt', sep='\t', row.names = T)
+# C
+write.table(topTable(contrast.fit, coef = 'Zt05.C.vs.Zt09.C', n=Inf), 'Tables/differential_coexpression/stage_C/Zt05.C.vs.Zt09.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt05.C.vs.Zt10.C', n=Inf), 'Tables/differential_coexpression/stage_C/Zt05.C.vs.Zt10.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt09.C.vs.Zt10.C', n=Inf), 'Tables/differential_coexpression/stage_C/Zt09.C.vs.Zt10.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X1E4.C.vs.X1A5.C', n=Inf), 'Tables/differential_coexpression/stage_C/X1E4.C.vs.X1A5.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.C.vs.X1E4.C', n=Inf), 'Tables/differential_coexpression/stage_C/X3D1.C.vs.X1E4.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.C.vs.X3D1.C', n=Inf), 'Tables/differential_coexpression/stage_C/X3D7.C.vs.X3D1.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.C.vs.X1A5.C', n=Inf), 'Tables/differential_coexpression/stage_C/X3D1.C.vs.X1A5.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.C.vs.X1E4.C', n=Inf), 'Tables/differential_coexpression/stage_C/X3D7.C.vs.X1E4.C.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.C.vs.X1A5.C', n=Inf), 'Tables/differential_coexpression/stage_C/X3D7.C.vs.X1A5.C.txt', sep='\t', row.names = T)
+# D
+write.table(topTable(contrast.fit, coef = 'Zt05.D.vs.Zt09.D', n=Inf), 'Tables/differential_coexpression/stage_D/Zt05.D.vs.Zt09.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt05.D.vs.Zt10.D', n=Inf), 'Tables/differential_coexpression/stage_D/Zt05.D.vs.Zt10.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'Zt09.D.vs.Zt10.D', n=Inf), 'Tables/differential_coexpression/stage_D/Zt09.D.vs.Zt10.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X1E4.D.vs.X1A5.D', n=Inf), 'Tables/differential_coexpression/stage_D/X1E4.D.vs.X1A5.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.D.vs.X1E4.D', n=Inf), 'Tables/differential_coexpression/stage_D/X3D1.D.vs.X1E4.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.D.vs.X3D1.D', n=Inf), 'Tables/differential_coexpression/stage_D/X3D7.D.vs.X3D1.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D1.D.vs.X1A5.D', n=Inf), 'Tables/differential_coexpression/stage_D/X3D1.D.vs.X1A5.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.D.vs.X1E4.D', n=Inf), 'Tables/differential_coexpression/stage_D/X3D7.D.vs.X1E4.D.txt', sep='\t', row.names = T)
+write.table(topTable(contrast.fit, coef = 'X3D7.D.vs.X1A5.D', n=Inf), 'Tables/differential_coexpression/stage_D/X3D7.D.vs.X1A5.D.txt', sep='\t', row.names = T)
+```
+
+```{r}
+## Create new data.frames of eigengene values for each strain in a stage for a module
+# Add sample.info columns to MEs.noGrey table, quite a rickety way to add on but works
+MEs.noGrey = cbind(MEs.noGrey, sample.info)
+
+# Define for loop parameter
+Eigengene.list = MEs.noGrey[,1:18]
+# Create lists
+MEs.A.list = list()
+MEs.B.list = list()
+MEs.C.list = list()
+MEs.D.list = list()
+
+## Create new data.frames of eigengene values for each strain in a stage for a module
+for (i in 1:length(Eigengene.list)) {
+    # Select specific ME row and extracts eigengenes coming from stage A
+    MEs.A.eigengene = MEs.noGrey[,i][MEs.noGrey$Stage == "A"] 
+    MEs.B.eigengene = MEs.noGrey[,i][MEs.noGrey$Stage == "B"] 
+    MEs.C.eigengene = MEs.noGrey[,i][MEs.noGrey$Stage == "C"] 
+    MEs.D.eigengene = MEs.noGrey[,i][MEs.noGrey$Stage == "D"] 
+    # Convert to data frame
+    MEs.A.df = data.frame(MEs.A.eigengene)
+    MEs.B.df = data.frame(MEs.B.eigengene)
+    MEs.C.df = data.frame(MEs.C.eigengene)
+    MEs.D.df = data.frame(MEs.D.eigengene)
+    # Assign column name to data frame
+    colnames(MEs.A.df) = colnames(MEs.noGrey[i])
+    colnames(MEs.B.df) = colnames(MEs.noGrey[i])
+    colnames(MEs.C.df) = colnames(MEs.noGrey[i])
+    colnames(MEs.D.df) = colnames(MEs.noGrey[i])
+    # Load data frame into list
+    MEs.A.list[[i]] <- MEs.A.df
+    MEs.B.list[[i]] <- MEs.B.df
+    MEs.C.list[[i]] <- MEs.C.df
+    MEs.D.list[[i]] <- MEs.D.df
+}
+
+
+# Create single data.frame of all eigengenes for each stage
+MEs.A = do.call("cbind", MEs.A.list)
+MEs.B = do.call("cbind", MEs.B.list)
+MEs.C = do.call("cbind", MEs.C.list)
+MEs.D = do.call("cbind", MEs.D.list)
+
+#Add Isolate column
+MEs.A$Isolate = MEs.noGrey$Isolate[MEs.noGrey$Stage == "A"]
+MEs.B$Isolate = MEs.noGrey$Isolate[MEs.noGrey$Stage == "B"]
+MEs.C$Isolate = MEs.noGrey$Isolate[MEs.noGrey$Stage == "C"]
+MEs.D$Isolate = MEs.noGrey$Isolate[MEs.noGrey$Stage == "D"]
+
+#Add Replicate column
+MEs.A$Replicate = MEs.noGrey$Replicate[MEs.noGrey$Stage == "A"]
+MEs.B$Replicate = MEs.noGrey$Replicate[MEs.noGrey$Stage == "B"]
+MEs.C$Replicate = MEs.noGrey$Replicate[MEs.noGrey$Stage == "C"]
+MEs.D$Replicate = MEs.noGrey$Replicate[MEs.noGrey$Stage == "D"]
+
+#Add Stage column
+MEs.A$Stage = MEs.noGrey$Stage[MEs.noGrey$Stage == "A"]
+MEs.B$Stage = MEs.noGrey$Stage[MEs.noGrey$Stage == "B"]
+MEs.C$Stage = MEs.noGrey$Stage[MEs.noGrey$Stage == "C"]
+MEs.D$Stage = MEs.noGrey$Stage[MEs.noGrey$Stage == "D"]
+```
+
+
+```{r}
+### Global Eigengene Box plots ###
+
+## Calculate significance between each infection stage of each module ##
+# Load Global comparisons
+B.vs.A = read.table("Tables/differential_coexpression/stageB.vs.stageA.txt", header = TRUE)
+C.vs.B = read.table("Tables/differential_coexpression/stageC.vs.stageB.txt", header = TRUE)
+D.vs.C = read.table("Tables/differential_coexpression/stageD.vs.stageC.txt", header = TRUE)
+# Create column labeling module eigengenes
+B.vs.A = setDT(B.vs.A, keep.rownames = "MEs")[]
+C.vs.B = setDT(C.vs.B, keep.rownames = "MEs")[]
+D.vs.C = setDT(D.vs.C, keep.rownames = "MEs")[]
+
+### FUNCTIONS ###
+# Function to create global .jpeg directory for figure
+jpegME = function(x) {
+  jpeg(file = paste("Plots/MEboxplots/Global/", x, ".jpeg", sep = ""))
+}
+# Function to print P.value if < 0.05
+signifFunc = function(x) {
+  if(x < 0.05) {
+    format(x, scientific = TRUE, digits = 1)
+  } else {
+    c()
+  }
+}
+# Function to print asterist P-value for P<5e^2; 1e^10; 1e^20; 1e^30;
+signifFunc2 = function(x) {
+  if (x < 1e-30) {
+    c("****")
+  } else if (x < 1e-20) {
+    c("***")
+  } else if (x < 1e-10) {
+    c("**")
+  } else if (x < 5e-2) {
+    c("*")
+  } else {
+    c()
+  }
+}
+
+signifFunc3 = function(x) {
+  if (x < 1e-10) {
+    c("***")
+  } else if (x < 1e-1) {
+    c("**")
+  } else if (x < 5e-2) {
+    c("*")
+  } else {
+    c()
+  }
+}
+
+## Format data to use in box plots ##
+# Define for loop parameter, organising cols by MEx
+Eigengene.list.A = MEs.A[,1:18]
+moduleLabels.noGrey = moduleLabels.df$moduleNumbers[2:19]
+Eigengene.list<- Eigengene.list.A[, moduleLabels.noGrey]
+Eigengene.list.B = MEs.B[,1:18][, moduleLabels.noGrey]
+
+# Make list
+global.ME.list = list()
+powerpoint.list = list()
+dissertation.list.a = list()
+dissertation.list.b = list()
+dissertation.list.c = list()
+x=1
+a=1
+aa=4
+aaa=7
+aaaa=8
+b=1
+c=1
+# Make table of eigengenes for each ME to use for ggplot
+for (i in 1:length(Eigengene.list)) {
+  MEs.ME =  colnames(Eigengene.list[,i, drop = FALSE])
+  # Extract specific eigengene values from an ME into data.frame
+  MEs.eigengene.list = list(MEs.A[,i][MEs.ME == MEs.ME], 
+                            MEs.B[,i][MEs.ME == MEs.ME], 
+                            MEs.C[,i][MEs.ME == MEs.ME], 
+                            MEs.D[,i][MEs.ME == MEs.ME])
+  # Create stage table
+  MEs.stage = list(MEs.A$Stage, MEs.B$Stage, MEs.C$Stage, MEs.D$Stage)
+  # Bind tables
+  MEs.eigengene.table = do.call("cbind", MEs.eigengene.list)
+  MEs.stage.bind = do.call("cbind", MEs.stage)
+  # Convert tables to vectors
+  MEs.eigengene.vector = as.vector(MEs.eigengene.table)
+  MEs.stage.vector = as.vector(MEs.stage.bind)
+  # Bind vectors into data frame
+  MEs.eigengene.df = data.frame(cbind(MEs.eigengene.vector, MEs.stage.vector))
+  # Convert columns to appropriate variables for ggplot
+  MEs.eigengene.df$MEs.stage.vector <- as.factor(MEs.eigengene.df$MEs.stage.vector)
+  MEs.eigengene.df$MEs.eigengene.vector <- as.numeric(MEs.eigengene.df$MEs.eigengene.vector)
+  
+  ## PRINT & SAVE EACH ME BOXPLOT, AND SAVE TO LIST ##
+  jpegME(MEs.ME)
+  # Convert each ggplot to ggplotgrob and add to list
+   global.ME.list[[i]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.8, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd=0.8, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.31, tip_length = 0, 
+         textsize = 3.5, vjust = -0.3) +
+       geom_signif(annotations = signifFunc(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.31, tip_length = 0, 
+         textsize = 3.5, vjust = -0.3) +
+       geom_signif(annotations = signifFunc(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.31, tip_length = 0, 
+         textsize = 3.5, vjust = -0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.87, 0.35) +
+       if (i == 1 | i == 4 | i == 7 | i == 10 | i == 13 | i == 16) {
+         ylab("Eigengene expression")
+         } else {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+           } )
+   dev.off()
+   
+   ## DISSERTATION FIGURES ##
+   if (i == 4 | i == 8 | i == 9) {
+   dissertation.list.a[[a]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.4, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd = 0.4, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc3(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.29, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.29, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.29, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.87, 0.35) +
+       if (i == 4 | i == 12 |i == 16) {
+         ylab("Eigengene expr.")
+         } else {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+         } )
+   a = a+1
+   }
+   if (i == 12 |i == 13 | i == 14) {
+   dissertation.list.a[[aa]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.4, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd = 0.4, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc3(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.25, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.25, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.25, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.7, 0.35) +
+       if (i == 12) {
+         ylab("Eigengene expr.")
+         } else {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+         } )
+   aa = aa+1
+   }
+   if (i == 16) {
+     dissertation.list.a[[aaa]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.4, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd = 0.4, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc3(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.31, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.31, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.31, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.3, 0.35) +
+       ylab("Eigengene expr."))
+   aaa = aaa+1
+   }
+   if (i == 2 |i == 15) {
+   dissertation.list.a[[aaaa]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.4, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd = 0.4, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc3(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.31, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.31, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.31, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.3, 0.35) +
+       theme(axis.title.y = element_blank(),
+             axis.text.y = element_blank(),
+             axis.ticks.y = element_blank())
+       )
+   aaaa = aaaa+1
+   }
+   if (i == 1 | i == 10 | i == 11 | i == 18) {
+   dissertation.list.b[[b]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.4, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd = 0.4, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc3(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.29, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.29, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.29, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.87, 0.35) +
+       if (i == 1) {
+         ylab("Eigengene expr.")
+         } else {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+         } )
+   b = b+1
+   }
+   if (i == 5 | i == 6 | i == 7 | i == 17) {
+   dissertation.list.c[[c]] = print(ggplot(
+     MEs.eigengene.df, aes(x=MEs.stage.vector, y=MEs.eigengene.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.4, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd = 0.4, 
+                    fill = MEs.tochange.df$MEcolour[MEs.tochange.df$moduleNumber == MEs.ME], 
+                    alpha = 0.9) +
+       geom_signif(annotations = signifFunc3(B.vs.A$adj.P.Val[B.vs.A$MEs == MEs.ME]), 
+         xmin = c(1.02), xmax = c(1.98), y_position = 0.21, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(C.vs.B$adj.P.Val[C.vs.B$MEs == MEs.ME]), 
+         xmin = c(2.02), xmax = c(2.98), y_position = 0.21, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       geom_signif(annotations = signifFunc3(D.vs.C$adj.P.Val[D.vs.C$MEs == MEs.ME]), 
+         xmin = c(3.02), xmax = c(3.98), y_position = 0.21, tip_length = 0, 
+         textsize = 4, vjust = 0.3) +
+       ggtitle(MEs.ME) +
+       theme(axis.title.x = element_blank()) + 
+       ylim(-0.3, 0.25) +
+       if (i == 5) {
+         ylab("Eigengene expr.")
+         } else {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+         } )
+   c = c+1
+   }
+}
+
+## Use global.ME.list to create grid form of boxplots ##
+jpeg(file = "Plots/MEboxplots/Global/MEgrid[1-9].jpeg", width = 700, height = 700, res = 85)
+plot = plot_grid(plotlist = global.ME.list[1:9], ncol = 3)
+  ggdraw(add_sub(plot, "Infection Stage", y = 0, vjust = -1.2, size = 13))
+dev.off()
+jpeg(file = "Plots/MEboxplots/Global/MEgrid[10-18].jpeg", width = 700, height = 700, res = 85)
+plot = plot_grid(plotlist = global.ME.list[10:18], ncol = 3)
+  ggdraw(add_sub(plot, "Infection Stage", y = 0, vjust = -1.2, size = 13))
+dev.off()
+
+# Dissertation Figure Formation
+jpeg(file = "Plots/MEboxplots/Global/MEgridDissertationA.jpeg", width = 700, height = 700, res = 85)
+p1 = plot_grid(plotlist = dissertation.list.a, labels = c('(a)'))
+  ggdraw(add_sub(p1, "Infection Stage", y = 0, vjust = -1.2, size = 13))
+dev.off()
+jpeg(file = "Plots/MEboxplots/Global/MEgridDissertationB.jpeg", width = 700, height = 350, res = 85)
+p2 = plot_grid(plotlist = dissertation.list.b, nrow = 1, labels = c('(b)'))
+  ggdraw(add_sub(p2, "Infection Stage", y = 0, vjust = -1.2, size = 13))
+dev.off()
+jpeg(file = "Plots/MEboxplots/Global/MEgridDissertationC.jpeg", width = 700, height = 350, res = 85)
+p3 = plot_grid(plotlist = dissertation.list.c, nrow = 1, labels = c('(c)'))
+  ggdraw(add_sub(p3, "Infection Stage", y = 0, vjust = -1.2, size = 13))
+dev.off()
+jpeg(file = "Plots/MEboxplots/Global/MEgridDissertationBC.jpeg", width = 700, height = 700, res = 85)
+  p4 = plot_grid(p2, p3, NULL, ncol=1)
+  ggdraw(add_sub(p4, "Infection Stage", y = 0, vjust = -1.2, size = 13))
+dev.off()
+jpeg(file = "Plots/MEboxplots/Global/MEgridDissertation.jpeg", width = 650, height = 1000, res = 100)
+  p5 = plot_grid(p1, p4, ncol=1)
+  p6 = add_sub(p5, "Infection Stage", vpadding=grid::unit(0, "lines"), y = 0, x= 1, 
+               vjust = -13, hjust = 3.2, size = 12.5)
+  ggdraw(p6)
+dev.off()
+```
+
+```{r}
+### FUNCTIONS ###
+# Save normalized counts box plots as jpeg
+jpegNorm = function(x) {
+  jpeg(file = paste("Plots/MEboxplots/normalizedCounts/", x, ".jpeg", sep = ""), 
+       width = 700, height = 700, res = 95)
+}
+
+## Read tables for ggsignif ##
+# Functions
+readtxtList.A = function (x) {
+  read.table(paste("Tables/differential_coexpression/stage_A/", x, sep = ""), header = T)
+}
+readtxtList.B = function (x) {
+  read.table(paste("Tables/differential_coexpression/stage_B/", x, sep = ""), header = T)
+}
+readtxtList.C = function (x) {
+  read.table(paste("Tables/differential_coexpression/stage_C/", x, sep = ""), header = T)
+}
+readtxtList.D = function (x) {
+  read.table(paste("Tables/differential_coexpression/stage_D/", x, sep = ""), header = T)
+}
+
+# Directory lists
+files.A = list.files(path = "Tables/differential_coexpression/stage_A/")
+files.B = list.files(path = "Tables/differential_coexpression/stage_B/")
+files.C = list.files(path = "Tables/differential_coexpression/stage_C/")
+files.D = list.files(path = "Tables/differential_coexpression/stage_D/")
+
+# Remove Zt based files so only non-Zt p-values are used
+files.A = files.A[!grepl("Zt", files.A)]
+files.B = files.B[!grepl("Zt", files.B)]
+files.C = files.C[!grepl("Zt", files.C)]
+files.D = files.D[!grepl("Zt", files.D)]
+
+# lapply to read tables for ggsignif
+signifList.A = lapply(files.A, readtxtList.A)
+signifList.B = lapply(files.B, readtxtList.B)
+signifList.C = lapply(files.C, readtxtList.C)
+signifList.D = lapply(files.D, readtxtList.D)
+
+# have modules as column
+signifList.A.MEs = lapply(signifList.A, function (x){setDT(x,keep.rownames = TRUE)})
+signifList.B.MEs = lapply(signifList.B, function (x){setDT(x,keep.rownames = TRUE)})
+signifList.C.MEs = lapply(signifList.C, function (x){setDT(x,keep.rownames = TRUE)})
+signifList.D.MEs = lapply(signifList.D, function (x){setDT(x,keep.rownames = TRUE)})
+
+# lapply to get P.values and respective MEs for ggsignif
+pValue.A = lapply(signifList.A.MEs, "[", , c("rn","adj.P.Val"))
+pValue.B = lapply(signifList.B.MEs, "[", , c("rn","adj.P.Val"))
+pValue.C = lapply(signifList.C.MEs, "[", , c("rn","adj.P.Val"))
+pValue.D = lapply(signifList.D.MEs, "[", , c("rn","adj.P.Val"))
+
+## Format data to use in box plots ###
+
+sample.info1 = read.table(file = "InputFiles/Sample_info.txt", header = TRUE)
+
+# Calc datExpr row means for each module
+# Change colnames to Ms
+colnames(datExpr) = gene.module.assignments$New.Module.Assignment
+datExpr2 = data.frame()
+
+# Get means for each rows of all same named MEs to put into single column
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M1"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M2"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M3"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M5"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M6"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M8"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M10"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M11"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M13"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M14"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M15"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M16"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M18"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M21"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M22"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M23"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M24"], na.rm=TRUE))
+datExpr2=rbind(datExpr2, rowMeans(
+  datExpr[,1:9276][,gene.module.assignments$New.Module.Assignment == "M26"], na.rm=TRUE))
+datExpr2 = as.data.frame(t(datExpr2))
+rownames(datExpr2) = rownames(datExpr)
+colnames(datExpr2) = c("M1.mean", "M2.mean", "M3.mean", 
+                                 "M5.mean", "M6.mean", "M8.mean", "M10.mean",
+                                 "M11.mean", "M13.mean", "M14.mean", "M15.mean",
+                                 "M16.mean", "M18.mean", "M21.mean", "M22.mean", 
+                                 "M23.mean", "M24.mean", "M26.mean")
+# Add isolate (x-axis ggplot), stage columns
+datExpr2$Isolate = sample.info1$Isolate
+datExpr2$Stage = sample.info$Stage
+```
+
+```{r}
+### BUILD DISSERTATION FIGURES ###
+
+## FIGURE 3 ###
+
+normCounts.stage = c("A", "B", "C", "D")
+normCounts.list = list()
+dissertation.normCounts.list = list()
+dissertation.normCounts.list4a = list()
+dissertation.normCounts.list4bc = list()
+dissertation.normCounts.list.stages = list()
+g=1
+# Fig 4
+iv.a=1
+iv.b=1
+iv.c=2
+# Separate by each module - No 'Zt' isolate row values
+for (i in 1:length(Eigengene.list)) {
+  MEs.ME =  colnames(Eigengene.list[,i, drop = FALSE])
+  MEs.normCounts.list = list(datExpr2[,i][MEs.ME == MEs.ME & datExpr2$Stage == "A" 
+                                          & !stri_detect(datExpr2$Isolate, regex = "Zt")],
+                            datExpr2[,i][MEs.ME == MEs.ME & datExpr2$Stage == "B"
+                                         & !stri_detect(datExpr2$Isolate, regex = "Zt")],
+                            datExpr2[,i][MEs.ME == MEs.ME & datExpr2$Stage == "C"
+                                         & !stri_detect(datExpr2$Isolate, regex = "Zt")],
+                            datExpr2[,i][MEs.ME == MEs.ME & datExpr2$Stage == "D"
+                                         & !stri_detect(datExpr2$Isolate, regex = "Zt")])
+  # Create isolate table
+  MEs.isolate = list(datExpr2$Isolate[datExpr2$Stage == "A" 
+                                      & !stri_detect(datExpr2$Isolate, regex = "Zt")], 
+                   datExpr2$Isolate[datExpr2$Stage == "B"
+                                    & !stri_detect(datExpr2$Isolate, regex = "Zt")],
+                   datExpr2$Isolate[datExpr2$Stage == "C"
+                                    & !stri_detect(datExpr2$Isolate, regex = "Zt")],
+                   datExpr2$Isolate[datExpr2$Stage == "D"
+                                    & !stri_detect(datExpr2$Isolate, regex = "Zt")])
+  # Create stage table
+  MEs.stage = list(datExpr2$Stage[datExpr2$Stage == "A"
+                                  & !stri_detect(datExpr2$Isolate, regex = "Zt")], 
+                   datExpr2$Stage[datExpr2$Stage == "B"
+                                  & !stri_detect(datExpr2$Isolate, regex = "Zt")], 
+                   datExpr2$Stage[datExpr2$Stage == "C"
+                                  & !stri_detect(datExpr2$Isolate, regex = "Zt")], 
+                   datExpr2$Stage[datExpr2$Stage == "D"
+                                  & !stri_detect(datExpr2$Isolate, regex = "Zt")])
+  # Bind tables
+  MEs.normCounts.table = do.call("cbind", MEs.normCounts.list)
+  MEs.isolate.bind = do.call("cbind", MEs.isolate)
+  MEs.stage.bind = do.call("cbind", MEs.stage)
+  # Convert tables to vectors
+  MEs.normCounts.vector = as.vector(MEs.normCounts.table)
+  MEs.isolate.vector = as.vector(MEs.isolate.bind)
+  MEs.stage.vector = as.vector(MEs.stage.bind)
+  # Bind vectors into data frame
+  MEs.normCounts.df = data.frame(cbind(MEs.normCounts.vector, MEs.isolate.vector, MEs.stage.vector))
+  # Convert columns to appropriate variables for ggplot
+  MEs.normCounts.df$MEs.isolate.vector <- as.factor(MEs.normCounts.df$MEs.isolate.vector)
+  MEs.normCounts.df$MEs.normCounts.vector <- as.numeric(MEs.normCounts.df$MEs.normCounts.vector)
+  # Extract P.Values for respective ME and run into ggsignif
+  pValue.A.ME = lapply(pValue.A, function (x) 
+    {x[["adj.P.Val"]][x[["rn"]] == MEs.ME]})
+  pValue.B.ME = lapply(pValue.B, function (x) 
+    {x[["adj.P.Val"]][x[["rn"]] == MEs.ME]})
+  pValue.C.ME = lapply(pValue.C, function (x) 
+    {x[["adj.P.Val"]][x[["rn"]] == MEs.ME]})
+  pValue.D.ME = lapply(pValue.D, function (x) 
+    {x[["adj.P.Val"]][x[["rn"]] == MEs.ME]})
+  # Get boxplot at each stage
+  for (n in 1:length(normCounts.stage)) {
+    jpegNorm(paste(MEs.ME, normCounts.stage[n], sep = "."))
+     gg = ggplot(MEs.normCounts.df, aes(x=MEs.isolate.vector, y=MEs.normCounts.vector, 
+                                        fill = MEs.isolate.vector)) +
+       stat_boxplot(geom ='errorbar', width = 0.4, lwd = 0.5, show.legend = FALSE, alpha = 0.9) +
+       geom_boxplot(show.legend = FALSE, lwd=0.5, alpha = 0.9) +
+       ggtitle(paste(MEs.ME, normCounts.stage[n], sep = ".")) +
+       scale_fill_manual(values = c("#44AA99", "#FBDE4D", "#88CCEE", "#FF6D02")) +
+       theme(axis.title.x = element_blank()) + 
+       scale_y_continuous(breaks = seq(2, 11, by = 1), limits = c(2, 11)) +
+       if (n == 1 | i == 2 | i == 5) {
+         ylab("Normalized counts") 
+         } else {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+           }  
+    if (n == 1) {
+      if (i == 10 | i == 16 | i == 17) {
+        hh = print(gg +
+            theme(plot.title = element_text(size = 10), 
+                  axis.text.x = element_text(size = 8), 
+                  axis.title.y = element_text(size = 10)) +
+            geom_signif(annotations = signifFunc2(pValue.A.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+            geom_signif(annotations = signifFunc2(pValue.A.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 8.4, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.A.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.A.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 10.2, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.A.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 9.3, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.A.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3))
+        dissertation.normCounts.list.stages[[n]] = hh
+      }
+      if (i == 6 | i == 7 | i == 12) {
+        iva = print(gg +
+            scale_y_continuous(breaks = seq(1.5, 8.8), limits = c(1.5, 8.8)) +
+            geom_signif(annotations = signifFunc(pValue.A.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 7.8, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+            geom_signif(annotations = signifFunc(pValue.A.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 8.4, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.A.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 7.8, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.A.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 10.5, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.A.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 9.6, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.A.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 7.8, tip_length = 0, 
+                      textsize = 3, vjust = -0.3)) +
+          if (i == 6) {
+         ylab("Normalized counts")
+         } else if (i == 7 | i == 12) {
+           theme(axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank())
+           }
+        dissertation.normCounts.list4a[[iv.a]] = plot_grid(iva)
+        iv.a = iv.a + 1
+      }
+              } 
+     if (n == 2) {
+       if (i == 10 | i == 16 | i == 17) {
+        hh = print(gg +
+            theme(plot.title = element_text(size = 10), axis.text.x = element_text(size = 8)) +
+            geom_signif(annotations = signifFunc2(pValue.B.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+            geom_signif(annotations = signifFunc2(pValue.B.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 8.4, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.B.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.B.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 10.2, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.B.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 9.3, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.B.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3))
+        if (i == 10) {
+          theme(axis.title.y = element_text(size = 10))
+        }
+        dissertation.normCounts.list.stages[[n]] = hh
+       }
+       if (i == 5) {
+        ivb = print(gg +
+            scale_y_continuous(breaks = seq(1.5, 8.8), limits = c(1.5, 8.8)) +
+            geom_signif(annotations = signifFunc(pValue.B.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 7.8, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+            geom_signif(annotations = signifFunc(pValue.B.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 8.5, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.B.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 7.8, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.B.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 10.5, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.B.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 9.6, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.B.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 7.8, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+          ylab("Normalized counts"))
+        dissertation.normCounts.list4bc[[iv.b]] = plot_grid(ivb)
+      }
+            }
+     if (n == 3) {
+       if (i == 10 | i == 16 | i == 17) {
+        hh = print(gg +
+                     theme(plot.title = element_text(size = 10), axis.text.x = element_text(size = 8)) +
+            geom_signif(annotations = signifFunc2(pValue.C.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+            geom_signif(annotations = signifFunc2(pValue.C.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 8.4, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.C.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.C.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 10.2, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.C.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 9.3, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.C.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3))
+        dissertation.normCounts.list.stages[[n]] = hh
+       }
+       if (i == 2 | i == 13) {
+        ivc = print(gg +
+            scale_y_continuous(breaks = seq(5, 12, by = 1), limits = c(5, 12)) +
+            geom_signif(annotations = signifFunc(pValue.C.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 9.5, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+            geom_signif(annotations = signifFunc(pValue.C.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 10.1, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.C.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 9.5, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.C.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 11.3, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.C.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 10.7, tip_length = 0, 
+                      textsize = 3, vjust = -0.3) +
+              geom_signif(annotations = signifFunc(pValue.C.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 9.5, tip_length = 0, 
+                      textsize = 3, vjust = -0.3)) +
+          if (i == 13) {
+            theme(axis.title.y = element_blank(),
+                  axis.text.y = element_blank(),
+                  axis.ticks.y = element_blank())
+          }
+        dissertation.normCounts.list4bc[[iv.c]] = plot_grid(ivc)
+        iv.c = iv.c + 1
+      }
+            }
+     if (n == 4) {
+       if (i == 10 | i == 16 | i == 17) {
+        hh = print(gg +
+                      theme(plot.title = element_text(size = 10), axis.text.x = element_text(size = 8)) +
+           geom_signif(annotations = signifFunc2(pValue.D.ME[[1]]), 
+                      xmin = c(1.02), xmax = c(1.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+            geom_signif(annotations = signifFunc2(pValue.D.ME[[2]]), 
+                      xmin = c(1.02), xmax = c(2.98), y_position = 8.4, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.D.ME[[3]]), 
+                      xmin = c(2.02), xmax = c(2.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.D.ME[[4]]), 
+                      xmin = c(1.02), xmax = c(3.98), y_position = 10.2, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.D.ME[[5]]), 
+                      xmin = c(2.02), xmax = c(3.98), y_position = 9.3, tip_length = 0, 
+                      textsize = 4, vjust = 0.3) +
+              geom_signif(annotations = signifFunc2(pValue.D.ME[[6]]), 
+                      xmin = c(3.02), xmax = c(3.98), y_position = 7.5, tip_length = 0, 
+                      textsize = 4, vjust = 0.3))
+        dissertation.normCounts.list.stages[[n]] = hh
+      }
+              }
+    dev.off()
+  }
+  
+  if (i == 10 | i == 16 | i == 17) {
+    dissertation.normCounts.list[[g]] = plot_grid(plotlist = dissertation.normCounts.list.stages, nrow = 1)
+    g = g+1
+  }
+
+}
+
+# normCounts Dissertation Figures #
+# Figure 3
+jpeg(file = "Plots/MEboxplots/normalizedCounts/MEDissertation3.jpeg", 
+     width = 600, height = 620, res = 100)
+plot1 = plot_grid(plotlist = dissertation.normCounts.list, nrow = 3, 
+                  labels = c("(a)", "(b)", "(c)"), label_size = 13)
+plot2 = add_sub(plot1, "Isolates", y = 0, vjust = -1.5, size = 10.5)
+ggdraw(plot2)
+dev.off()
+
+# Figure 4
+jpeg(file = "Plots/MEboxplots/normalizedCounts/MEDissertation4a.jpeg", 
+     width = 700, height = 350, res = 85)
+plot1 = plot_grid(plotlist = dissertation.normCounts.list4a, nrow = 1,
+                  labels = c("(a)", "", ""), label_size = 15)
+ggdraw(plot1)
+dev.off()
+
+jpeg(file = "Plots/MEboxplots/normalizedCounts/MEDissertation4bc.jpeg", 
+     width = 700, height = 350, res = 85)
+plot2 = plot_grid(plotlist = dissertation.normCounts.list4bc, nrow = 1,
+                  labels = c("(b)", "(c)", ""), label_size = 15)
+plot3 = add_sub(plot2, "Isolates", y = 0, vjust = -1.2, size = 13)
+ggdraw(plot3)
+dev.off()
+
+jpeg(file = "Plots/MEboxplots/normalizedCounts/MEDissertation4.jpeg", 
+     width = 600, height = 650, res = 100)
+plot4 = plot_grid(plot1, plot3, nrow = 2)
+ggdraw(plot4)
+dev.off()
+```
+
