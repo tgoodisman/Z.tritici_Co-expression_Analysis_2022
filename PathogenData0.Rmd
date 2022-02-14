@@ -1,0 +1,31 @@
+---
+title: "0. Background Setup"
+output: html_notebook
+---
+
+```{r}
+# Setup working directory
+getwd()
+workingDir = "."
+# Load required packages
+library(mgcv)
+library(AnnotationDbi)
+library(AnnotationHub)
+library(Biobase)
+library(BiocManager)
+library(clusterProfiler)
+library(cowplot)
+library(data.table)
+library(dynamicTreeCut)
+library(ggplot2)
+library(ggfortify)
+library(ggsignif)
+library(GO.db)
+library(gridExtra)
+library(impute)
+library(limma)
+library(preprocessCore)
+library(stringi)
+library(WGCNA)
+options(stringsAsFactors = FALSE)
+```
