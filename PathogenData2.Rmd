@@ -1,0 +1,130 @@
+---
+title: "2. Identify Enriched GO Terms for Each Module"
+output: html_notebook
+---
+
+```{r}
+# Read in the gene (IPO to NCBI) mappings. NCBI called GID here.
+gene.ID.mappings = read.table('InputFiles/z_tritici_IPO_gid.lookup', header=F, sep='\t', row.names = 1, col.names=c('IPO', 'GID'))
+
+# Create a data frame that stores IPO IDs and the module to which the gene is assigned
+gene.module.assignments = data.frame("ID" = colnames(datExpr),
+                                     "Module.Assignment" = moduleColors,
+                                     "New.Module.Assignment" = moduleLabels.ME,
+                                     check.names = F)
+
+# Define background gene list, universe argument in enrichGO (all genes used to construct network) #
+# Note the select here from gene.ID.mappings which converts between IPO IDs and NCBI IDs
+background.genes = gene.ID.mappings[gene.module.assignments$ID,]
+background.genes = as.character(na.omit(background.genes)) # Omits any genes with no NCBI ID
+
+# Need to work with AnnotationHub for Zymoseptoria
+ah <- AnnotationHub()
+zt = ah[["AH95449"]] 
+
+# For Loop for GO enrichment via clusterProfiler #
+module.names = unique(moduleColors) # Get list of module names - colours from WGCNA
+
+# Make list for each enrichGO dataframe
+BPlist = list()
+MFlist = list()
+CClist = list()
+for (i in 1:length(module.names))
+{
+  # Get module colour label #
+  mod.col = module.names[i]
+                                  
+  # Extract genes in given module #
+  modGenes.df = gene.module.assignments[gene.module.assignments$Module.Assignment == mod.col,][1]
+  
+  # Convert to NCBI IDs using the lockup table
+  modGenes = gene.ID.mappings[modGenes.df$ID,]
+  modGenes = as.character(na.omit(modGenes))
+                                  
+  # Run clusterProfiler GO enrichment for Biological Process (BP) #
+  mod.GO.enrichment.BP = enrichGO(gene = modGenes,
+                                  universe = background.genes,
+                                  OrgDb = zt,
+                                  ont = "BP",
+                                  pAdjustMethod = "BH",
+                                  pvalueCutoff = 0.05,
+                                  qvalueCutoff = 0.05,
+                                  readable = TRUE)
+
+  # Run clusterProfiler GO enrichment for Molecular Function (MF) #
+  mod.GO.enrichment.MF = enrichGO(gene = modGenes,
+                                  universe = background.genes,
+                                  OrgDb = zt,
+                                  ont = "MF",
+                                  pAdjustMethod = "BH",
+                                  pvalueCutoff = 0.05,
+                                  qvalueCutoff = 0.05,
+                                  readable = TRUE)
+
+  # Run clusterProfiler GO enrichment for Cellular Components (CC) #
+  mod.GO.enrichment.CC = enrichGO(gene = modGenes,
+                                  universe = background.genes,
+                                  OrgDb = zt,
+                                  ont = "CC",
+                                  pAdjustMethod = "BH",
+                                  pvalueCutoff = 0.05,
+                                  qvalueCutoff = 0.05,
+                                  readable = TRUE)
+  
+  # Create dataframes to store these results
+  mod.GO.enrichment.BP.df = data.frame(mod.GO.enrichment.BP)
+  mod.GO.enrichment.MF.df = data.frame(mod.GO.enrichment.MF)
+  mod.GO.enrichment.CC.df = data.frame(mod.GO.enrichment.CC) 
+  
+  # Create empty module colour column in dataframe
+  #Add assigned module colour column to dataframe
+  if (!nrow(mod.GO.enrichment.BP.df) == 0) {
+    mod.GO.enrichment.BP.df$moduleColour = NA
+    mod.GO.enrichment.BP.df$moduleNumber = NA
+    mod.GO.enrichment.BP.df$moduleColour = mod.col
+    mod.GO.enrichment.BP.df$moduleNumber = 
+      MEs.tochange.df$moduleNumber[MEs.tochange.df$MEcolour == mod.col]
+  } 
+  
+  if (!nrow(mod.GO.enrichment.MF.df) == 0) {
+    mod.GO.enrichment.MF.df$moduleColour = NA
+    mod.GO.enrichment.MF.df$moduleNumber = NA
+    mod.GO.enrichment.MF.df$moduleColour = mod.col
+    mod.GO.enrichment.MF.df$moduleNumber = 
+      MEs.tochange.df$moduleNumber[MEs.tochange.df$MEcolour == mod.col]
+  } 
+  
+  if (!nrow(mod.GO.enrichment.CC.df) == 0) {
+    mod.GO.enrichment.CC.df$moduleColour = NA
+    mod.GO.enrichment.CC.df$moduleNumber = NA
+    mod.GO.enrichment.CC.df$moduleColour = mod.col
+    mod.GO.enrichment.CC.df$moduleNumber = 
+      MEs.tochange.df$moduleNumber[MEs.tochange.df$MEcolour == mod.col]
+  } 
+  
+  
+  # Assign each dataframe to BP list to aggregate GO enrichment results per module
+  #BP
+  BPlist[[i]] <- mod.GO.enrichment.BP.df
+  #MF
+  MFlist[[i]] <- mod.GO.enrichment.MF.df
+  #CC
+  CClist[[i]] <- mod.GO.enrichment.CC.df
+  
+  # Save modified expression data
+  save(BPlist, MFlist, CClist, file = "mod-GO-enrichment.RData")
+}
+
+# Aggregate all modules into single dataframe
+BPdf = data.table::rbindlist(BPlist, fill = TRUE) # 105 enriched terms for p<0.05, q<0.05
+MFdf = data.table::rbindlist(MFlist, fill = TRUE) # 74 enriched terms for p<0.05, q<0.05
+CCdf = data.table::rbindlist(CClist, fill = TRUE) # 55 enriched terms for p<0.05, q<0.05
+
+# Create CSVs to export results
+mod.GO.enrichment.BP.csv = write.csv(BPdf, file = "Tables/GOenrichmentCSV/enrichGO-BP.csv", 
+                                     row.names = FALSE)
+mod.GO.enrichment.MF.csv = write.csv(MFdf, file = "Tables/GOenrichmentCSV/enrichGO-MF.csv", 
+                                     row.names = FALSE)
+mod.GO.enrichment.CC.csv = write.csv(CCdf, file = "Tables/GOenrichmentCSV/enrichGO-CC.csv", 
+                                     row.names = FALSE)
+```
