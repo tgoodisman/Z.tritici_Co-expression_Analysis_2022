@@ -1,0 +1,708 @@
+---
+title: "5. Outcome Correlation Analysis"
+output: html_notebook
+---
+
+```{r}
+## Modify outcomes table slightly ##
+
+# Read the outcomes file
+infection.outcomes = read.table('InputFiles/outcomes.txt', sep=',', header=T)
+
+## Create data.frame which averages Isolate M values across all replicates found
+# Create data.frame
+MEs.noGrey.means = data.frame()
+
+# Add means of M values taken from each respective replicate
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt05",][MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt05",][MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt05",][MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt05",][MEs.noGrey$Stage == "D",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt09",][MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt09",][MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt09",][MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt09",][MEs.noGrey$Stage == "D",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt10",][MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt10",][MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt10",][MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "Zt10",][MEs.noGrey$Stage == "D",], na.rm=TRUE))
+
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D1" & MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D1" & MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D1" & MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D1" & MEs.noGrey$Stage == "D",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D7" & MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D7" & MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D7" & MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X3D7" & MEs.noGrey$Stage == "D",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1A5" & MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1A5" & MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1A5" & MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1A5" & MEs.noGrey$Stage == "D",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1E4" & MEs.noGrey$Stage == "A",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1E4" & MEs.noGrey$Stage == "B",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1E4" & MEs.noGrey$Stage == "C",], na.rm=TRUE))
+MEs.noGrey.means=rbind(MEs.noGrey.means, colMeans(
+  MEs.noGrey[,1:18][MEs.noGrey$Isolate == "X1E4" & MEs.noGrey$Stage == "D",], na.rm=TRUE))
+
+# Add col & rownames
+colnames(MEs.noGrey.means) = colnames(MEs.noGrey[,1:18])
+rownames(MEs.noGrey.means) = unique(paste(MEs.noGrey$Isolate, MEs.noGrey$Stage, sep = "_"))
+# Reorder columns M1 -> M26
+MEs.noGrey.means = MEs.noGrey.means[,stri_sort(colnames(MEs.noGrey.means), numeric = T)]
+
+write.table(MEs.noGrey, file = "Tables/MEs.noGrey.txt", sep = "\t")
+
+```
+
+
+```{r}
+# Create an eignegene data frame for each stage of the infection process
+eig.A = data.frame(MEs.noGrey.means[stri_detect(rownames(MEs.noGrey.means), regex = "_A"),])
+eig.B = data.frame(MEs.noGrey.means[stri_detect(rownames(MEs.noGrey.means), regex = "_B"),])
+eig.C = data.frame(MEs.noGrey.means[stri_detect(rownames(MEs.noGrey.means), regex = "_C"),])
+eig.D = data.frame(MEs.noGrey.means[stri_detect(rownames(MEs.noGrey.means), regex = "_D"),])
+
+# Calculate correlations between eigengenes and infection outcomes
+# NB you will need to do this for all infection stages and each infection outcome
+# Explain why using correlation
+# Explain why using two-tailed t-test as alternative
+eig.A.corAndP = corAndPvalue(eig.A, infection.outcomes[,2:5], use = "pairwise.complete.obs", alternative = c("two.sided"))
+eig.B.corAndP = corAndPvalue(eig.B, infection.outcomes[,2:5], use = "pairwise.complete.obs", alternative = c("two.sided"))
+eig.C.corAndP = corAndPvalue(eig.C, infection.outcomes[,2:5], use = "pairwise.complete.obs", alternative = c("two.sided"))
+eig.D.corAndP = corAndPvalue(eig.D, infection.outcomes[,2:5], use = "pairwise.complete.obs", alternative = c("two.sided"))
+
+```
+
+```{r}
+# eig.A Heatmap
+textMatrix = paste(signif(eig.A.corAndP$p, 2), "\n(", signif(eig.A.corAndP$cor, 2), ")", sep = "")
+dim(textMatrix) = dim(eig.A.corAndP$cor)
+jpeg(file = "Plots/Heatmaps/eig.A.jpeg", width = 400, height = 800)
+par(mar = c(5, 3, 3, 2))
+labeledHeatmap(Matrix = eig.A.corAndP$cor,
+xLabels = c("Necrosis\ndevelopment", "Pycnidia\ndevelopment", "Necrosis\nlevel", "Early\nonset"),
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+plotLegend = FALSE,
+keepLegendSpace = TRUE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "(a)", 
+adj = 0,
+cex.main = 2)
+dev.off()
+
+# eig.B Heatmap
+textMatrix = paste(signif(eig.B.corAndP$p, 2), "\n(", signif(eig.B.corAndP$cor, 2), ")", sep = "")
+dim(textMatrix) = dim(eig.B.corAndP$cor)
+jpeg(file = "Plots/Heatmaps/eig.B.jpeg", width = 400, height = 800)
+par(mar = c(5, 3, 3, 2))
+labeledHeatmap(Matrix = eig.B.corAndP$cor,
+xLabels = c("Necrosis\ndevelopment", "Pycnidia\ndevelopment", "Necrosis\nlevel", "Early\nonset"),
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+plotLegend = FALSE,
+keepLegendSpace = TRUE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "(b)", 
+adj = 0,
+cex.main = 2)
+dev.off()
+
+# eig.C Heatmap
+textMatrix = paste(signif(eig.C.corAndP$p, 2), "\n(", signif(eig.C.corAndP$cor, 2), ")", sep = "")
+dim(textMatrix) = dim(eig.C.corAndP$cor)
+jpeg(file = "Plots/Heatmaps/eig.C.jpeg", width = 400, height = 800)
+par(mar = c(5, 3, 3, 2)) 
+labeledHeatmap(Matrix = eig.C.corAndP$cor,
+xLabels = c("Necrosis\ndevelopment", "Pycnidia\ndevelopment", "Necrosis\nlevel", "Early\nonset"),
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+plotLegend = FALSE,
+keepLegendSpace = TRUE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "(c)", 
+adj = 0,
+cex.main = 2)
+dev.off()
+
+# eig.D Heatmap
+textMatrix = paste(signif(eig.D.corAndP$p, 2), "\n(", signif(eig.D.corAndP$cor, 2), ")", sep = "")
+dim(textMatrix) = dim(eig.D.corAndP$cor)
+jpeg(file = "Plots/Heatmaps/eig.D.jpeg", width = 400, height = 800)
+par(mar = c(5, 3, 3, 2))
+labeledHeatmap(Matrix = eig.D.corAndP$cor,
+xLabels = c("Necrosis\ndevelopment", "Pycnidia\ndevelopment", "Necrosis\nlevel", "Early\nonset"),
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "(d)", 
+adj = 0,
+cex.main = 2)
+dev.off()
+
+```
+
+```{r}
+## Module Pairwise Co-Expression Heatmaps ##
+
+# Reorder rows M1 -> M26
+B.vs.A$MEs = gsub("M", "", B.vs.A$MEs)
+B.vs.A$MEs = as.numeric(B.vs.A$MEs)
+B.vs.A = B.vs.A[order(B.vs.A$MEs),]
+
+C.vs.B$MEs = gsub("M", "", C.vs.B$MEs)
+C.vs.B$MEs = as.numeric(C.vs.B$MEs)
+C.vs.B = C.vs.B[order(C.vs.B$MEs),]
+
+D.vs.C$MEs = gsub("M", "", D.vs.C$MEs)
+D.vs.C$MEs = as.numeric(D.vs.C$MEs)
+D.vs.C = D.vs.C[order(D.vs.C$MEs),]
+
+# B.vs.A Heatmap
+textMatrix = paste(signif(B.vs.A$logFC, 2), "\n(", signif(B.vs.A$adj.P.Val, 2), ")", sep = "")
+dim(textMatrix) = c(18, 1)
+jpeg(file = "Plots/Heatmaps/B.vs.A.jpeg", width = 200, height = 800)
+par(mar = c(5, 3, 3, 2))
+labeledHeatmap(Matrix = B.vs.A[,2],
+xLabels = NA,
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+plotLegend = FALSE,
+keepLegendSpace = TRUE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "B.vs.A",
+adj = 0,
+cex.main = 1.5)
+dev.off()
+
+# C.vs.B Heatmap
+textMatrix = paste(signif(C.vs.B$logFC, 2), "\n(", signif(C.vs.B$adj.P.Val, 2), ")", sep = "")
+dim(textMatrix) = c(18, 1)
+jpeg(file = "Plots/Heatmaps/C.vs.B.jpeg", width = 200, height = 800)
+par(mar = c(5, 3, 3, 2))
+labeledHeatmap(Matrix = C.vs.B[,2],
+xLabels = NA,
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+plotLegend = FALSE,
+keepLegendSpace = TRUE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "C.vs.B",
+adj = 0,
+cex.main = 1.5)
+dev.off()
+
+# D.vs.C Heatmap
+textMatrix = paste(signif(D.vs.C$logFC, 2), "\n(", signif(D.vs.C$adj.P.Val, 2), ")", sep = "")
+dim(textMatrix) = c(18, 1)
+jpeg(file = "Plots/Heatmaps/D.vs.C.jpeg", width = 200, height = 800)
+par(mar = c(5, 3, 3, 2))
+labeledHeatmap(Matrix = D.vs.C[,2],
+xLabels = NA,
+yLabels = names(MEs.noGrey.means),
+xLabelsAngle = 90,
+textAdj = c(0.5,0.5),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+keepLegendSpace = TRUE,
+cex.text = 1,
+zlim = c(-1,1),
+main = "D.vs.C",
+adj = 0,
+cex.main = 1.5)
+dev.off()
+
+```
+
+```{r}
+#### DRAW SCATTERPLOTS OF SIGNIFICANT ME OUTCOMES ####
+
+## Signif list of modules and fields affected ##
+# A.ME24.Pycnidia
+# B.ME13.Necrosis.lvl/Early.onset
+# B.ME24.Pycnidia
+# C.ME6.Necrosis.lvl/Early.onset
+# C.ME13.Necrosis.lvl/Early.onset
+# C.ME24.Pycnidia
+# D.ME24.Pycnidia
+
+
+# A.ME24.Pycnidia
+eig.A.ME24 = eig.A[colnames(eig.A)==c("M24")]
+eig.A.ME24$Pycnidia.dpi = NA
+eig.A.ME24$Group = NA
+for (x in 1:length(eig.A.ME24$Pycnidia.dpi)){
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "3D1")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D1"]
+    eig.A.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "3D7")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D7"]
+    eig.A.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "1A5")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1A5"]
+    eig.A.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "1E4")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1E4"]
+    eig.A.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "Zt05")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt05"]
+    eig.A.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "Zt09")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt09"]
+    eig.A.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.A.ME24)[x], regex = "Zt10")) {
+    eig.A.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt10"]
+    eig.A.ME24$Group[x] = "H"
+  }
+}
+
+jpeg(filename = "Plots/eigscatterplots/A.Pycnidia.M24.jpeg")
+ggplot(eig.A.ME24, aes(y=Pycnidia.dpi, x=M24)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.A.ME24)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M24.A: Pycnidia development") +
+  xlab("Eigengene expression")
+dev.off()
+
+# B.ME13.Necrosis.lvl/Early.onset
+eig.B.ME13 = eig.B[colnames(eig.B)==c("M13")]
+eig.B.ME13$Necrosis.level = NA
+eig.B.ME13$Early.onset = NA
+eig.B.ME13$Group = NA
+for (x in 1:length(eig.B.ME13$Necrosis.level)){
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "3D1")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "3D1"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "3D1"]
+    eig.B.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "3D7")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "3D7"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "3D7"]
+    eig.B.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "1A5")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "1A5"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "1A5"]
+    eig.B.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "1E4")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "1E4"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "1E4"]
+    eig.B.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "Zt05")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt05"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt05"]
+    eig.B.ME13$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "Zt09")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt09"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt09"]
+    eig.B.ME13$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.B.ME13)[x], regex = "Zt10")) {
+    eig.B.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt10"]
+    eig.B.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt10"]
+    eig.B.ME13$Group[x] = "H"
+  }
+}
+
+jpeg(filename = "Plots/eigscatterplots/B.NecrosisLvl.M13.jpeg")
+ggplot(eig.B.ME13, aes(y=Necrosis.level, x=M13)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.B.ME13)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("ME13.B: Final Necrosis Level") +
+  xlab("Eigengene expression")
+dev.off()
+
+jpeg(filename = "Plots/eigscatterplots/B.EarlyOnset.M13.jpeg")
+ggplot(eig.B.ME13, aes(y=Early.onset, x=M13)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.B.ME13)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M13.B: Early Onset") +
+  xlab("Eigengene expression")
+dev.off()
+
+# B.ME24.Pycnidia
+eig.B.ME24 = eig.B[colnames(eig.B)==c("M24")]
+eig.B.ME24$Pycnidia.dpi = NA
+eig.B.ME24$Group = NA
+for (x in 1:length(eig.B.ME24$Pycnidia.dpi)){
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "3D1")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D1"]
+    eig.B.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "3D7")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D7"]
+    eig.B.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "1A5")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1A5"]
+    eig.B.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "1E4")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1E4"]
+    eig.B.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "Zt05")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt05"]
+    eig.B.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "Zt09")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt09"]
+    eig.B.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.B.ME24)[x], regex = "Zt10")) {
+    eig.B.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt10"]
+    eig.B.ME24$Group[x] = "H"
+  }
+}
+
+jpeg(filename = "Plots/eigscatterplots/B.Pycnidia.M24.jpeg")
+ggplot(eig.B.ME24, aes(y=Pycnidia.dpi, x=M24)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.B.ME24)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M24.B: Pycnidia development") +
+  xlab("Eigengene expression")
+dev.off()
+
+# C.ME6.Necrosis.lvl/Early.onset
+eig.C.ME6 = eig.C[colnames(eig.C)==c("M6")]
+eig.C.ME6$Necrosis.level = NA
+eig.C.ME6$Early.onset = NA
+eig.C.ME6$Group = NA
+for (x in 1:length(eig.C.ME6$Necrosis.level)){
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "3D1")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "3D1"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "3D1"]
+    eig.C.ME6$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "3D7")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "3D7"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "3D7"]
+    eig.C.ME6$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "1A5")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "1A5"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "1A5"]
+    eig.C.ME6$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "1E4")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "1E4"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "1E4"]
+    eig.C.ME6$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "Zt05")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt05"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt05"]
+    eig.C.ME6$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "Zt09")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt09"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt09"]
+    eig.C.ME6$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.C.ME6)[x], regex = "Zt10")) {
+    eig.C.ME6$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt10"]
+    eig.C.ME6$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt10"]
+    eig.C.ME6$Group[x] = "H"
+  }
+}
+
+jpeg(filename = "Plots/eigscatterplots/C.NecrosisLvl.M6.jpeg")
+ggplot(eig.C.ME6, aes(y=Necrosis.level, x=M6)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.C.ME6)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M6.C: Final Necrosis Level") +
+  xlab("Eigengene expression")
+dev.off()
+
+jpeg(filename = "Plots/eigscatterplots/C.EarlyOnset.M6.jpeg")
+ggplot(eig.C.ME6, aes(y=Early.onset, x=M6)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.C.ME6)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M6.C: Early Onset") +
+  xlab("Eigengene expression")
+dev.off()
+
+# C.ME13.Necrosis/Necrosis.lvl/Early.onset -> cowplot these
+eig.C.ME13 = eig.C[colnames(eig.C)==c("M13")]
+eig.C.ME13$Necrosis.dpi = NA
+eig.C.ME13$Necrosis.level = NA
+eig.C.ME13$Early.onset = NA
+eig.C.ME13$Group = NA
+for (x in 1:length(eig.C.ME13$Necrosis.level)){
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "3D1")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "3D1"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "3D1"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "3D1"]
+    eig.C.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "3D7")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "3D7"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "3D7"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "3D7"]
+    eig.C.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "1A5")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "1A5"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "1A5"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "1A5"]
+    eig.C.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "1E4")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "1E4"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "1E4"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "1E4"]
+    eig.C.ME13$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "Zt05")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "Zt05"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt05"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt05"]
+    eig.C.ME13$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "Zt09")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "Zt09"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt09"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt09"]
+    eig.C.ME13$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.C.ME13)[x], regex = "Zt10")) {
+    eig.C.ME13$Necrosis.dpi[x] =  infection.outcomes$Necrosis..dpi.[infection.outcomes$Isolate == "Zt10"]
+    eig.C.ME13$Necrosis.level[x] =  infection.outcomes$Necrosis.level[infection.outcomes$Isolate == "Zt10"]
+    eig.C.ME13$Early.onset[x] =  infection.outcomes$Early.onset[infection.outcomes$Isolate == "Zt10"]
+    eig.C.ME13$Group[x] = "H"
+  }
+}
+
+M13.C.list = list()
+jpeg(filename = "Plots/eigscatterplots/C.Necrosis.M13.jpeg")
+M13.C.list[[1]] = ggplot(eig.C.ME13, aes(y=Necrosis.dpi, x=M13)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.C.ME13)), size = 2, show.legend = F) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("Necrosis development", subtitle = bquote("R"^2~ "="~ -0.69)) +
+  theme(plot.title = element_text(size = 12)) +
+  xlab("Eigengene expression")
+dev.off()
+
+jpeg(filename = "Plots/eigscatterplots/C.NecrosisLvl.M13.jpeg")
+M13.C.list[[2]] = ggplot(eig.C.ME13, aes(y=Necrosis.level, x=M13)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.C.ME13)), size = 2, show.legend = F) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("Final Necrosis Level", subtitle = bquote("R"^2~ "="~ 0.83)) +
+  theme(plot.title = element_text(size = 12)) +
+  xlab("Eigengene expression")
+dev.off()
+
+
+jpeg(filename = "Plots/eigscatterplots/C.EarlyOnset.M13.jpeg")
+M13.C.list[[3]] = ggplot(eig.C.ME13, aes(y=Early.onset, x=M13)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.C.ME13)), size = 2) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("Early Onset", subtitle = bquote("R"^2~ "="~ 0.83)) +
+  theme(plot.title = element_text(size = 12)) +
+  xlab("Eigengene expression") +
+  theme(legend.key.size = unit(0.5, 'cm'), legend.text = element_text(size=8), legend.title = element_text(size=10))
+dev.off()
+
+
+## cowplot of M13.C infection outcome graphs
+jpeg(file = "Plots/eigscatterplots/M13.C.Figure.jpeg", width = 650, height = 325, res = 95)
+plot = plot_grid(plotlist = M13.C.list, nrow = 1, labels = c('(a)', '(b)', '(c)'), label_size = 14, scale = 0.98)
+ggdraw(plot)
+dev.off()
+
+# C.ME24.Pycnidia
+eig.C.ME24 = eig.C[colnames(eig.C)==c("M24")]
+eig.C.ME24$Pycnidia.dpi = NA
+eig.C.ME24$Group = NA
+for (x in 1:length(eig.C.ME24$Pycnidia.dpi)){
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "3D1")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D1"]
+    eig.C.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "3D7")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D7"]
+    eig.C.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "1A5")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1A5"]
+    eig.C.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "1E4")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1E4"]
+    eig.C.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "Zt05")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt05"]
+    eig.C.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "Zt09")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt09"]
+    eig.C.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.C.ME24)[x], regex = "Zt10")) {
+    eig.C.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt10"]
+    eig.C.ME24$Group[x] = "H"
+  }
+}
+
+jpeg(filename = "Plots/eigscatterplots/C.Pycnidia.M24.jpeg")
+ggplot(eig.C.ME24, aes(y=Pycnidia.dpi, x=M24)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.C.ME24)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M24.C: Pycnidia development") +
+  xlab("Eigengene expression")
+dev.off()
+
+# D.ME24.Pycnidia
+eig.D.ME24 = eig.D[colnames(eig.D)==c("M24")]
+eig.D.ME24$Pycnidia.dpi = NA
+eig.D.ME24$Group = NA
+for (x in 1:length(eig.D.ME24$Pycnidia.dpi)){
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "3D1")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D1"]
+    eig.D.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "3D7")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "3D7"]
+    eig.D.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "1A5")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1A5"]
+    eig.D.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "1E4")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "1E4"]
+    eig.D.ME24$Group[x] = "PG"
+  } 
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "Zt05")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt05"]
+    eig.D.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "Zt09")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt09"]
+    eig.D.ME24$Group[x] = "H"
+  } 
+  if(stri_detect(rownames(eig.D.ME24)[x], regex = "Zt10")) {
+    eig.D.ME24$Pycnidia.dpi[x] =  infection.outcomes$Pycnidia..dpi.[infection.outcomes$Isolate == "Zt10"]
+    eig.D.ME24$Group[x] = "H"
+  }
+}
+
+jpeg(filename = "Plots/eigscatterplots/D.Pycnidia.M24.jpeg")
+ggplot(eig.D.ME24, aes(y=Pycnidia.dpi, x=M24)) +
+  geom_smooth(method=lm , color="grey", fill='lightgrey', se=TRUE) +
+  geom_point(aes(color = Group, shape = rownames(eig.D.ME24)), size = 3) +
+  scale_shape_manual(values = c(15,6,19,5,17,9,18), name = "Isolates", labels = c("1A5", "1E4", "3D1", "3D7", "Zt05", "Zt09", "Zt10")) +
+  ggtitle("M24.D: Pycnidia development") +
+  xlab("Eigengene expression")
+dev.off()
+
+```
+
+```{r}
+# calculate scaled kIM - you should have these parameters (or variations of) in your code
+kIM =intramodularConnectivity(adjacency, moduleLabels.ME, scaleByMax = T)
+# Add module colour assignments for each gene # 
+kIM$Module = moduleLabels.ME
+
+# Remove un-needed columns of kIM dataframe #
+kIM$kOut <- NULL
+kIM$kDiff <- NULL
+kIM$kTotal <- NULL
+
+# Order kIM data.frame by module and connectivity #
+# Note the - sign to sort by decreasing value
+kIM.reorder = kIM[order(kIM$Module, -kIM$kWithin),]
+# Remove M0 rows
+kIM.reorder.noGrey = subset(kIM.reorder, Module != "M0")
+# Write up table
+write.table(kIM.reorder.noGrey, file = "Tables/intra-intermodular_connectivity.txt", sep = "\t")
+# Identify Hub genes
+write.table(kIM.reorder.noGrey[kIM.reorder.noGrey$kWithin >=0.7,], file = "Tables/hub.genes.txt", sep = "\t")
+
+```
