@@ -1,7 +1,7 @@
 # Z.tritici_Co-expression_Analysis_2022
 All code, tables and figures for my dissertation regarding Zymoseptoria tritici co-expression analysis.
 
-Please execute code according to numbered order.
+Please execute .rmd code according to numbered order.
 
 All neccessary files have been made and input files uploaded for reproducible results. I also uploaded the figures the code should create from the provided data.
 
