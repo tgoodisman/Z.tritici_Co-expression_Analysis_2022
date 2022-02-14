@@ -1,0 +1,8 @@
+Isolate,Necrosis (dpi),Pycnidia (dpi),Necrosis level,Early onset
+Zt05,12,19,5,1
+Zt09,13,17,5,1
+Zt10,19,23,4,0
+3D1,17,21,4,0
+3D7,14,18,5,1
+1A5,14,28,5,1
+1E4,14,18,5,1
