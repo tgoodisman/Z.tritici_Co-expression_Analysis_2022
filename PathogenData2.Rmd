@@ -120,11 +120,13 @@ BPdf = data.table::rbindlist(BPlist, fill = TRUE) # 105 enriched terms for p<0.0
 MFdf = data.table::rbindlist(MFlist, fill = TRUE) # 74 enriched terms for p<0.05, q<0.05
 CCdf = data.table::rbindlist(CClist, fill = TRUE) # 55 enriched terms for p<0.05, q<0.05
 
+# Remove unused columns
+BPdfEdit = BPdf[,c(1,2,6:9,11)]
+MFdfEdit = MFdf[,c(1,2,6:9,11)]
+CCdfEdit = CCdf[,c(1,2,6:9,11)]
+
 # Create CSVs to export results
-mod.GO.enrichment.BP.csv = write.csv(BPdf, file = "Tables/GOenrichmentCSV/enrichGO-BP.csv", 
-                                     row.names = FALSE)
-mod.GO.enrichment.MF.csv = write.csv(MFdf, file = "Tables/GOenrichmentCSV/enrichGO-MF.csv", 
-                                     row.names = FALSE)
-mod.GO.enrichment.CC.csv = write.csv(CCdf, file = "Tables/GOenrichmentCSV/enrichGO-CC.csv", 
-                                     row.names = FALSE)
+mod.GO.enrichment.BP.csv = write.csv(BPdfEdit, file ="Tables/GOenrichmentCSV/enrichGO-BP.csv", row.names = FALSE)
+mod.GO.enrichment.MF.csv = write.csv(MFdfEdit, file ="Tables/GOenrichmentCSV/enrichGO-MF.csv", row.names = FALSE)
+mod.GO.enrichment.CC.csv = write.csv(CCdfEdit, file ="Tables/GOenrichmentCSV/enrichGO-CC.csv", row.names = FALSE)
 ```
