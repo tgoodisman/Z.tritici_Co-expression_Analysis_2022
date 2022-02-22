@@ -1,4 +1,7 @@
 # Z.tritici_Co-expression_Analysis_2022
+
+This repository contains corrupt data, please don't execute this code and instead go to the v2 repository: 
+
 All code, tables and figures for my dissertation regarding Zymoseptoria tritici co-expression analysis.
 
 Please execute .Rmd code according to numbered order.
